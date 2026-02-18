@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Repair Shop System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{font-family:Arial;background:#0f172a;color:#e5e7eb;margin:0;padding:20px}
+.hidden{display:none}
+.card{background:#111827;padding:16px;border-radius:12px;margin-bottom:16px}
+input,select,textarea{padding:8px;margin-top:6px;border-radius:6px;border:none;font-size:14px}
+
+/* Knoppen algemene stijl */
+button {
+  background:#22c55e;
+  font-weight:bold;
+  cursor:pointer;
+  padding:6px 12px;
+  border-radius:6px;
+  border:none;
+  font-size:14px;
+  width:auto;
+  min-width:60px;
+  margin:4px 2px;
+}
+
+/* Navigatie knoppen */
+.nav-left button, .nav-right button {
+  padding:8px 16px;
+  font-size:15px;
+}
+
+/* Actieknoppen in tabellen */
+.btns button {
+  padding:4px 8px;
+  font-size:12px;
+  margin-right:2px;
+}
+
+/* Specifiek export knop */
+.nav-right button {
+  background:#38bdf8;
+  padding:8px 16px;
+  font-size:15px;
+}
+
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border-bottom:1px solid #374151;padding:6px;text-align:left}
+.badge{padding:3px 6px;border-radius:6px;font-size:12px}
+.green{background:#16a34a}.yellow{background:#ca8a04}.red{background:#dc2626}
+
+nav{display:flex;justify-content:space-between;align-items:center}
+.nav-left button,.nav-right button{width:auto;margin:4px}
+
+/* Agenda kalender */
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:10px}
+.day{background:#1f2937;padding:8px;border-radius:6px;min-height:60px;position:relative}
+.day header{font-weight:bold;margin-bottom:4px;font-size:12px}
+.appointment{background:#22c55e;color:#fff;padding:2px 4px;margin:2px 0;border-radius:4px;font-size:12px;cursor:pointer}
+.appointment.red{background:#dc2626}
+.appointment.yellow{background:#ca8a04}
+.appointment.blue{background:#38bdf8}
+</style>
+</head>
+
+<body onload="initLogin()">
+
+<!-- LOGIN -->
+<div id="login" class="card">
+<h2>🔐 Login</h2>
+<input id="pinInput" type="password" placeholder="PIN">
+<button onclick="login()">Login</button>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+<nav class="card">
+  <div class="nav-left">
+    <button onclick="show('dashboard')">📊 Dashboard</button>
+    <button onclick="show('customers')">👥 Customers</button>
+    <button onclick="show('tickets')">🎫 Tickets</button>
+    <button onclick="show('agenda')">📅 Agenda</button>
+    <button onclick="show('inventory')">📦 Inventory</button>
+    <button onclick="show('history')">🕒 History</button>
+  </div>
+  <div class="nav-right">
+    <button onclick="exportData()">⬇️ Export</button>
+  </div>
+</nav>
+
+<div id="dashboard" class="card hidden">
+<h2>Dashboard</h2>
+<p>Total tickets: <b id="dTickets"></b></p>
+<p>Open tickets: <b id="dOpen"></b></p>
+<p>Total profit: €<b id="dProfit"></b></p>
+</div>
+
+<!-- AGENDA -->
+<div id="agenda" class="card hidden">
+<h2>📅 Agenda</h2>
+<div>
+<input id="aName" placeholder="Customer">
+<input id="aDate" type="date">
+<input id="aTime" type="time">
+<textarea id="aNote" placeholder="Notes"></textarea>
+<select id="aColor">
+<option value="green">Green</option>
+<option value="yellow">Yellow</option>
+<option value="red">Red</option>
+<option value="blue">Blue</option>
+</select>
+<button onclick="addAppointment()">Add appointment</button>
+<button onclick="prevMonth()">◀️</button>
+<span id="currentMonth"></span>
+<button onclick="nextMonth()">▶️</button>
+</div>
+<div id="calendar" class="calendar"></div>
+</div>
+
+<div id="tickets" class="card hidden">
+<h2>Tickets</h2>
+<input type="hidden" id="editId">
+<input id="customer" placeholder="Customer">
+<input id="model" placeholder="Device">
+<textarea id="repair" placeholder="Repair"></textarea>
+<input id="cost" type="number" placeholder="Cost">
+<input id="price" type="number" placeholder="Price">
+<select id="status">
+<option>In progress</option>
+<option>Waiting</option>
+<option>Done</option>
+</select>
+<button onclick="saveTicket()">Save ticket</button>
+
+<table>
+<thead><tr><th>#</th><th>Customer</th><th>Device</th><th>Status</th><th>Profit</th><th>Action</th></tr></thead>
+<tbody id="ticketTable"></tbody>
+</table>
+</div>
+
+<div id="history" class="card hidden">
+<h2>History</h2>
+<table>
+<thead><tr><th>#</th><th>Customer</th><th>Device</th><th>Profit</th></tr></thead>
+<tbody id="historyTable"></tbody>
+</table>
+</div>
+
+<div id="customers" class="card hidden">
+<h2>Customers</h2>
+<input id="cName" placeholder="Name">
+<input id="cPhone" placeholder="Phone">
+<input id="cMail" placeholder="Email">
+<button onclick="addCustomer()">Save</button>
+<table>
+<thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Action</th></tr></thead>
+<tbody id="customerTable"></tbody>
+</table>
+</div>
+
+<div id="inventory" class="card hidden">
+<h2>Inventory</h2>
+<input id="pName" placeholder="Part">
+<input id="pQty" type="number" placeholder="Qty">
+<button onclick="addPart()">Add</button>
+<table>
+<thead><tr><th>Part</th><th>Qty</th><th>Action</th></tr></thead>
+<tbody id="invTable"></tbody>
+</table>
+</div>
+
+</div>
+
+<script>
+/* LOGIN */
+function initLogin(){ document.getElementById("app").classList.add("hidden"); }
+function login(){
+ const pin=document.getElementById("pinInput").value;
+ if(pin==="2011"){
+  document.getElementById("login").style.display="none";
+  document.getElementById("app").classList.remove("hidden");
+  initApp();
+ } else alert("Wrong PIN");
+}
+
+/* DATA */
+let tickets=[],history=[],customers=[],inventory=[],agenda=[];
+let currentMonth=new Date();
+
+function load(){
+ tickets=JSON.parse(localStorage.getItem("tickets")||"[]");
+ history=JSON.parse(localStorage.getItem("history")||"[]");
+ customers=JSON.parse(localStorage.getItem("customers")||"[]");
+ inventory=JSON.parse(localStorage.getItem("inventory")||"[]");
+ agenda=JSON.parse(localStorage.getItem("agenda")||"[]");
+}
+function save(){
+ localStorage.setItem("tickets",JSON.stringify(tickets));
+ localStorage.setItem("history",JSON.stringify(history));
+ localStorage.setItem("customers",JSON.stringify(customers));
+ localStorage.setItem("inventory",JSON.stringify(inventory));
+ localStorage.setItem("agenda",JSON.stringify(agenda));
+}
+
+/* INIT */
+function initApp(){ load(); show("dashboard"); renderAll(); renderCalendar(); }
+
+/* NAV */
+function show(id){
+ ["dashboard","agenda","tickets","history","customers","inventory"].forEach(x=>document.getElementById(x).classList.add("hidden"));
+ document.getElementById(id).classList.remove("hidden");
+}
+
+/* TICKETS */
+function saveTicket(){
+ const id=editId.value||Date.now();
+ tickets=tickets.filter(t=>t.id!=id);
+ tickets.push({
+  id,customer:customer.value,model:model.value,repair:repair.value,
+  cost:+cost.value||0,price:+price.value||0,status:status.value
+ });
+ editId.value="";
+ customer.value=model.value=repair.value=cost.value=price.value="";
+ status.value="In progress";
+ save(); renderAll();
+}
+function renderTickets(){
+ ticketTable.innerHTML="";
+ tickets.forEach(t=>{
+  ticketTable.innerHTML+=`<tr>
+<td>${t.id}</td><td>${t.customer}</td><td>${t.model}</td>
+<td><span class="badge ${t.status==="Done"?"green":"yellow"}">${t.status}</span></td>
+<td>€${t.price-t.cost}</td>
+<td class="btns">
+<button onclick="edit(${t.id})">✏️</button>
+<button onclick="finish(${t.id})">🕒</button>
+</td></tr>`;
+ });
+}
+function edit(id){
+ const t=tickets.find(x=>x.id==id);
+ editId.value=t.id; customer.value=t.customer; model.value=t.model;
+ repair.value=t.repair; cost.value=t.cost; price.value=t.price; status.value=t.status;
+}
+function finish(id){
+ const t=tickets.find(x=>x.id==id);
+ tickets=tickets.filter(x=>x.id!=id);
+ history.push(t);
+ save(); renderAll();
+}
+
+/* AGENDA */
+function addAppointment(){
+ agenda.push({name:aName.value,date:aDate.value,time:aTime.value,note:aNote.value,color:aColor.value});
+ aName.value=aDate.value=aTime.value=aNote.value=""; aColor.value="green";
+ save(); renderCalendar();
+}
+function renderCalendar(){
+ const cal=document.getElementById("calendar");
+ cal.innerHTML="";
+ const year=currentMonth.getFullYear(), month=currentMonth.getMonth();
+ const firstDay=new Date(year,month,1).getDay();
+ const daysInMonth=new Date(year,month+1,0).getDate();
+ document.getElementById("currentMonth").textContent=currentMonth.toLocaleString('nl',{month:'long',year:'numeric'});
+
+for(let i=0;i<firstDay;i++){ cal.innerHTML+=`<div class="day"></div>`; }
+
+for(let d=1;d<=daysInMonth;d++){
+ let dayDate=new Date(year,month,d);
+ let dayDiv=document.createElement("div");
+ dayDiv.className="day";
+ dayDiv.innerHTML=`<header>${d}</header>`;
+ agenda.filter(a=>a.date===dayDate.toISOString().split("T")[0])
+       .forEach((a,i)=>{
+ let ap=document.createElement("div");
+ ap.className=`appointment ${a.color}`;
+ ap.textContent=`${a.time} - ${a.name}`;
+ ap.onclick=()=>editAppointment(a);
+ dayDiv.appendChild(ap);
+ });
+ cal.appendChild(dayDiv);
+ }
+}
+
+function editAppointment(a){
+ let n=prompt("Customer:",a.name,a.name);
+ if(n!==null) a.name=n;
+ let t=prompt("Time:",a.time,a.time);
+ if(t!==null) a.time=t;
+ let note=prompt("Notes:",a.note,a.note);
+ if(note!==null) a.note=note;
+ let color=prompt("Color (green,yellow,red,blue):",a.color,a.color);
+ if(color!==null) a.color=color;
+ save(); renderCalendar();
+}
+
+function prevMonth(){ currentMonth.setMonth(currentMonth.getMonth()-1); renderCalendar(); }
+function nextMonth(){ currentMonth.setMonth(currentMonth.getMonth()+1); renderCalendar(); }
+
+/* CUSTOMERS */
+function addCustomer(){
+ const existing=customers.find(c=>c.name===cName.value);
+ if(existing){ existing.phone=cPhone.value; existing.email=cMail.value; }
+ else{ customers.push({name:cName.value,phone:cPhone.value,email:cMail.value}); }
+ cName.value=cPhone.value=cMail.value="";
+ save(); renderCustomers();
+}
+function renderCustomers(){
+ customerTable.innerHTML="";
+ customers.forEach((c,i)=>{
+  customerTable.innerHTML+=`<tr>
+<td>${c.name}</td><td>${c.phone}</td><td>${c.email}</td>
+<td class="btns">
+<button onclick="editCustomer(${i})">✏️</button>
+<button onclick="delCustomer(${i})">🗑️</button>
+</td></tr>`;
+ });
+}
+function editCustomer(i){
+ const c=customers[i];
+ cName.value=c.name; cPhone.value=c.phone; cMail.value=c.email;
+ customers.splice(i,1); save(); renderCustomers();
+}
+function delCustomer(i){ customers.splice(i,1); save(); renderCustomers(); }
+
+/* INVENTORY */
+function addPart(){ inventory.push({name:pName.value,qty:pQty.value}); pName.value=pQty.value=""; save(); renderInv(); }
+function renderInv(){ invTable.innerHTML=""; inventory.forEach(p=>{ invTable.innerHTML+=`<tr><td>${p.name}</td><td>${p.qty}</td><td></td></tr>`; }); }
+
+/* DASHBOARD */
+function renderDash(){
+ dTickets.textContent=tickets.length;
+ dOpen.textContent=tickets.filter(t=>t.status!="Done").length;
+ dProfit.textContent=tickets.reduce((s,t)=>s+(t.price-t.cost),0);
+}
+
+/* HISTORY */
+function renderHistory(){ historyTable.innerHTML=""; history.forEach(t=>{ historyTable.innerHTML+=`<tr><td>${t.id}</td><td>${t.customer}</td><td>${t.model}</td><td>€${t.price-t.cost}</td></tr>`; }); }
+
+/* EXPORT */
+function exportData(){
+ const blob=new Blob([JSON.stringify({tickets,history,customers,inventory,agenda},null,2)],{type:"application/json"});
+ const a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="backup.json";
+ a.click();
+}
+
+/* RENDER ALL */
+function renderAll(){ renderTickets(); renderHistory(); renderCustomers(); renderInv(); renderDash(); renderCalendar(); }
+</script>
+</body>
+</html>
